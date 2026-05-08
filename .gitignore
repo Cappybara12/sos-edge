@@ -1,0 +1,34 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Qdrant Edge Shard (large binary data, don't commit)
+qdrant-edge-shard/
+test-shard/
+
+# Model cache
+models_cache/
+
+# Dataset (large, re-downloadable)
+data/ESC-50/
+data/UrbanSound8K/
+data/*.zip
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp

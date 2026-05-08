@@ -1,0 +1,12 @@
+qdrant-edge-py
+fastembed
+tensorflow
+tensorflow-hub
+librosa
+sounddevice
+numpy
+python-dotenv
+requests
+audiomentations
+soundata
+tqdm
