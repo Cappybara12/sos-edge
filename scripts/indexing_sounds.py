@@ -29,7 +29,7 @@ ALERT_CLASSES = {
     "glass_breaking": {"sound_type": "glass_break",   "severity": "high"},
     "car_horn":       {"sound_type": "car_horn",       "severity": "medium"},
     "siren":          {"sound_type": "siren",          "severity": "high"},
-    "gunshot":        {"sound_type": "collision",      "severity": "high"},
+    "gunshot":        {"sound_type": "gunshot",        "severity": "high"},
     "dog":            {"sound_type": "dog_bark",       "severity": "low"},
     "tire_screech":   {"sound_type": "tire_screech",  "severity": "high"},   # custom samples
 }
