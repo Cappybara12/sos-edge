@@ -44,10 +44,10 @@ cp .env.example .env
 ### 3. Index sound library (one-time)
 
 ```bash
-python scripts/index_sounds.py
+python scripts/indexing_sounds.py
 ```
 
-This downloads the ESC-50 dataset, generates YAMNet embeddings for all distress + negative sounds, and builds the local Qdrant Edge shard (~6 MB).
+This downloads the ESC-50 dataset, incorporates any custom samples from `data/custom/`, generates YAMNet embeddings for all distress + negative sounds (with engine noise augmentation for custom samples), and builds the local Qdrant Edge shard (~6 MB).
 
 ### 4. Test the pipeline
 
@@ -80,14 +80,20 @@ All tunable parameters live in `.env`:
 | `CHUNK_DURATION_SECONDS` | `1` | Audio window size |
 | `OVERLAP_SECONDS` | `0.5` | Overlap between windows |
 
+### Advanced False-Positive Filtering (`src/detector.py`)
+To prevent false alarms in noisy environments, the system uses custom per-class overrides:
+- **Amplitude Gating**: The system strictly ignores low-volume ambient noises (like AC or engine hums) before they even reach the AI model.
+- **Strict Mode (`car_horn`, `siren`)**: Broadband noises like wind can mimic sirens/horns. These require a very high similarity score (e.g., `0.90` or `0.96`) to trigger.
+- **Sensitive Mode (`scream`, `gunshot`)**: Since emergency human screams and gunshots can be brief or muffled, they are highly sensitive (score `0.80` to `0.85`) and require fewer consecutive hits to alert you instantly.
+
 ---
 
 ## Sound Classes
 
 **Alert sounds (trigger SOS):**
-- `scream` / `crying` → severity: high / medium
+- `scream` / `crying` → severity: high / medium *(includes custom datasets)*
 - `glass_break` → severity: high
-- `collision` (sharp impulse sounds) → severity: high
+- `collision` / `gunshot` → severity: high *(includes custom datasets)*
 - `siren` → severity: high
 - `car_horn` → severity: medium
 
@@ -103,9 +109,9 @@ All tunable parameters live in `.env`:
 | Vector database | [Qdrant Edge](https://qdrant.tech/documentation/edge/) (`qdrant-edge-py`) |
 | Audio embedding | [YAMNet](https://tfhub.dev/google/yamnet/1) via TF Hub (1024-d) |
 | Audio preprocessing | [librosa](https://librosa.org/) |
-| Mic capture | [sounddevice](https://python-sounddevice.readthedocs.io/) |
+| Audio capture | [sounddevice](https://python-sounddevice.readthedocs.io/) |
 | Alert delivery | Telegram Bot API |
-| Dataset | [ESC-50](https://github.com/karoldvl/ESC-50) |
+| Datasets | [ESC-50](https://github.com/karoldvl/ESC-50), custom `.wav`/`.mp3` folders |
 
 ---
 
