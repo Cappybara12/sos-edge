@@ -15,6 +15,20 @@ from src.embedder import get_embedding
 from src.preprocessor import preprocess_mic_chunk
 from src.vector_store import VectorStore
 
+# Skip chunks below this RMS — filters out very quiet ambient noise
+_AMPLITUDE_GATE_RMS: float = 0.03
+
+# Per-class similarity thresholds.
+# Broadband ambient noise (fan/AC) scores 0.87–0.93 against car_horn and siren,
+# so those classes require a higher threshold than acoustically distinct ones.
+_CLASS_THRESHOLD_OVERRIDES: dict[str, float] = {
+    "car_horn":    0.90,
+}
+
+# Impulsive sounds (gunshot, glass break) are short — only require 2 hits
+# instead of the global default (3) to fire an alert.
+_CLASS_HITS_REQUIRED: dict[str, int] = {}
+
 
 @dataclass
 class DetectionEvent:
@@ -49,6 +63,12 @@ class Detector:
 
     def process_chunk(self, raw_chunk: np.ndarray) -> Optional[DetectionEvent]:
         self.chunks_processed += 1
+        
+        # Amplitude gate — skip embedding for very quiet chunks
+        raw_rms = float(np.sqrt(np.mean(raw_chunk.astype(np.float32) ** 2)))
+        if raw_rms < _AMPLITUDE_GATE_RMS:
+            return None
+
         waveform = preprocess_mic_chunk(raw_chunk)
 
         # ── 2. Embed
@@ -60,7 +80,12 @@ class Detector:
 
         best = results[0]
         best_score = best["score"]
-        if best_score < self._threshold:
+        sound_type_early = best.get("payload", {}).get("sound_type", "")
+        effective_threshold = _CLASS_THRESHOLD_OVERRIDES.get(
+            sound_type_early, self._threshold
+        )
+
+        if best_score < effective_threshold:
             return None
 
         self.total_hits += 1
@@ -80,14 +105,15 @@ class Detector:
             self._hit_window.popleft()
 
         recent_hits = len(self._hit_window)
+        hits_required = _CLASS_HITS_REQUIRED.get(event.sound_type, self._hits_required)
 
         print(
             f"[detector] Hit! score={best_score:.3f}  "
             f"type={event.sound_type}  severity={event.severity}  "
-            f"recent_hits={recent_hits}/{self._hits_required}"
+            f"recent_hits={recent_hits}/{hits_required}"
         )
 
-        if recent_hits >= self._hits_required:
+        if recent_hits >= hits_required:
             self.total_alerts += 1
             event.hit_count = recent_hits
             self._hit_window.clear()
