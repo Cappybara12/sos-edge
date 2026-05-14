@@ -23,11 +23,14 @@ _AMPLITUDE_GATE_RMS: float = 0.03
 # so those classes require a higher threshold than acoustically distinct ones.
 _CLASS_THRESHOLD_OVERRIDES: dict[str, float] = {
     "car_horn":    0.90,
+    "scream":      0.80,  # Lowered threshold so screams are detected easier
 }
 
 # Impulsive sounds (gunshot, glass break) are short — only require 2 hits
 # instead of the global default (3) to fire an alert.
-_CLASS_HITS_REQUIRED: dict[str, int] = {}
+_CLASS_HITS_REQUIRED: dict[str, int] = {
+    "scream":      2,     # Requires fewer hits since screams can be short
+}
 
 
 @dataclass
